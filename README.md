@@ -8,7 +8,7 @@ To compile the code
 
 To run 
 
-`./isql some_sql_script`
+`./isql some_SQL_script` or `./isql < some_SQL_script`
 
 or 
 
