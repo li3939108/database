@@ -18,7 +18,10 @@ WHITE_SPACE           [ \t\r]
 
 %%
 {WHITE_SPACE}         {/* IGNORE white spaces */}       
+"SELECT"              { printf("scanned SELECT\n");    }
+"DROP"                { printf("scanned DROP\n");    }
 "CREATE"              { printf("scanned CREATE\n");    }
+"FROM"                { printf("scanned FROM\n");   }
 {dotted_name}         { printf("scanned dotted name: \n");}
 {name}                { printf("scanned name: \n");}
 
