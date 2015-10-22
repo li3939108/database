@@ -11,17 +11,16 @@ digit                 [0-9]
 letter                [a-z]
 integer               {digit}+
 comp_op               [<>=]
-table_name            {letter}({digit}|{letter})*
-attribute_name        {table_name}
-column_name           ({table_name}{DOT})?{attribute_name}
+name                  {letter}({digit}|{letter})* 
+dotted_name           {name}{DOT}{name}
 literal               "[^"]"
 WHITE_SPACE           [ \t\r]
 
 %%
 {WHITE_SPACE}         {/* IGNORE white spaces */}       
 "CREATE"              { printf("scanned CREATE\n");    }
-{column_name}         { printf("scanned column: \n");}
-{table_name}          { printf("scanned name: \n");}
+{dotted_name}         { printf("scanned dotted name: \n");}
+{name}                { printf("scanned name: \n");}
 
 %%
 int main( int argc, char **argv ){
