@@ -4,6 +4,8 @@
 #include <iostream>
 using namespace std;
 %}
+%s                    DROP_TABLE_STATEMENT
+%s                    SELECT_STATEMENT
 
 
 DOT                   [.]
@@ -39,27 +41,32 @@ C_T                   {C}{WS}+{T}
 D_T                   {DP}{WS}+{T}
 I_I                   {IS}{WS}+{IT}
 D_F                   {DT}{WS}+{F}
-SELECT                {S}{WS}+{DISTINCT}?
+SELECT                {S}({WS}+{DISTINCT})?
 
 %%
 
-{WS}+                 {/* IGNORE white spaces */}       
-{SELECT}              {
-                      cout << "scanned SELECT" << endl;
-                      }
-{dotted_name}         { 
-                      cout << "scanned dotted name:" << endl ;
-                      }
-{name}                { 
-                      cout << "scanned name: " << endl ;
-                      }
-{D_T}{WS}+{name}      {/* drop-table-statement */
-                      cout << "scanned drop-table-statement" << endl ;
-                      }
-.                     {/* all other character */
-                      perror("Error: unaccepted character\n") ;
-                      exit(EXIT_FAILURE); 
-                      }
+{WS}+ {/* IGNORE white spaces */}       
+{SELECT}{WS}+ {
+	cout << "scanned SELECT" << endl;
+	BEGIN(SELECT_STATEMENT);
+}
+{dotted_name} { 
+	cout << "scanned dotted name: " << yytext << endl ;
+}
+{D_T}{WS}+ {
+	cout << "START DROP TABLE" << endl ;
+	BEGIN(DROP_TABLE_STATEMENT);
+}
+<DROP_TABLE_STATEMENT>{name} {/* drop-table-statement name*/
+	cout << "scanned drop-table-statement" << yytext << endl ;
+}
+{name} {
+	cout << "scanned name: " << yytext << endl ;
+}
+. {/* all other character */
+	fprintf(stderr, "Error: unaccepted character: %s\n", yytext) ;
+	exit(EXIT_FAILURE); 
+}
 
 %%
 int main( int argc, char **argv ){
