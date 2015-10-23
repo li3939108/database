@@ -43,10 +43,22 @@ D_T_Statement         {D_T}{WS}+{name}
 %%
 
 {WS}+                 {/* IGNORE white spaces */}       
-{SELECT}              { printf("scanned SELECT\n");}
-{dotted_name}         { printf("scanned dotted name: \n");}
-{name}                { printf("scanned name: \n");}
-.                     { perror("Unaccepted character\n") ; exit(EXIT_FAILURE); }
+{SELECT}              {
+                      printf("scanned SELECT\n");
+                      }
+{dotted_name}         { 
+                      printf("scanned dotted name: \n");
+                      }
+{name}                { 
+                      printf("scanned name: \n");
+                      }
+{D_T}{WS}+{name}      {/* drop-table-statement */
+                      printf("scanned drop-table-statement\n"); 
+                      }
+.                     {/* all other character */
+                      perror("Error: unaccepted character\n") ;
+                      exit(EXIT_FAILURE); 
+                      }
 
 %%
 int main( int argc, char **argv ){
