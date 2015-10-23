@@ -40,7 +40,6 @@ D_T                   {DP}{WS}+{T}
 I_I                   {IS}{WS}+{IT}
 D_F                   {DT}{WS}+{F}
 SELECT                {S}{WS}+{DISTINCT}?
-D_T_Statement         {D_T}{WS}+{name}
 
 %%
 
