@@ -8,6 +8,7 @@ using namespace std;
 %s                    DELETE_STATEMENT
 %s                    SELECT_STATEMENT
 %s                    INSERT_STATEMENT
+%s                    CREATE_TABLE_STATEMENT
 
 
 DOT                   [.]
@@ -56,6 +57,10 @@ SELECT                {S}({WS}+{DISTINCT})?
 	cerr << "scanned:\tDELETE FROM" << endl ;
 	BEGIN(DELETE_STATEMENT);
 }
+{C_T}{WS}+ {
+	cerr << "scanned:\tCREATE TABLE" << endl;
+	BEGIN(CREATE_TABLE_STATEMENT);
+}
 {D_T}{WS}+ {
 	cerr << "scanned:\tDROP TABLE" << endl ;
 	BEGIN(DROP_TABLE_STATEMENT);
@@ -68,13 +73,16 @@ SELECT                {S}({WS}+{DISTINCT})?
 	cerr << "column_name:\t" << yytext << endl ;
 }
 <DELETE_STATEMENT>{name} {/* DELETE from table */
-	cerr << "table to del:\t" << yytext << endl ;
+	cerr << "delete table:\t" << yytext << endl ;
 }
 <DROP_TABLE_STATEMENT>{name} {/* drop-table-statement name*/
-	cerr << "table to drop:\t" << yytext << endl ;
+	cerr << "drop table:\t" << yytext << endl ;
 }
 <INSERT_STATEMENT>{name} {
 	cerr << "table to ins:\t" << yytext << endl;
+}
+<CREATE_TABLE_STATEMENT>{name} {
+	cerr << "create table:\t" << yytext << endl;
 }
 {name} {
 	cerr << "scanned name:\t" << yytext << endl ;
