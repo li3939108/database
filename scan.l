@@ -1,9 +1,7 @@
 %{
-//Headers
 #include <stdio.h>
-
+#include <stdlib.h>
 %}
-
 
 
 DOT                   [.]
@@ -42,14 +40,13 @@ D_F                   {DT}{WS}+{F}
 SELECT                {S}{WS}+{DISTINCT}?
 D_T_Statement         {D_T}{WS}+{name}
 
-
-
 %%
 
-{WS}                  {/* IGNORE white spaces */}       
+{WS}+                 {/* IGNORE white spaces */}       
 {SELECT}              { printf("scanned SELECT\n");}
 {dotted_name}         { printf("scanned dotted name: \n");}
 {name}                { printf("scanned name: \n");}
+.                     { perror("Unaccepted character\n") ; exit(EXIT_FAILURE); }
 
 %%
 int main( int argc, char **argv ){
