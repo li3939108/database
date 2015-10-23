@@ -5,6 +5,7 @@
 using namespace std;
 %}
 %s                    DROP_TABLE_STATEMENT
+%s                    DELETE_STATEMENT
 %s                    SELECT_STATEMENT
 
 
@@ -46,22 +47,29 @@ SELECT                {S}({WS}+{DISTINCT})?
 %%
 
 {WS}+ {/* IGNORE white spaces */}       
+{D_F}{WS}+ {
+	cout << "scanned:\tDELETE FROM" << endl ;
+	BEGIN(DELETE_STATEMENT);
+}
 {SELECT}{WS}+ {
-	cout << "scanned SELECT" << endl;
+	cout << "scanned:\tSELECT [DISTINCT]" << endl;
 	BEGIN(SELECT_STATEMENT);
 }
 {dotted_name} { 
-	cout << "scanned dotted name: " << yytext << endl ;
+	cout << "dotted_name:\t" << yytext << endl ;
 }
 {D_T}{WS}+ {
-	cout << "START DROP TABLE" << endl ;
+	cout << "scanned:\tDROP TABLE" << endl ;
 	BEGIN(DROP_TABLE_STATEMENT);
 }
+<DELETE_STATEMENT>{name} {/* DELETE from table */
+	cout << "table to del:\t" << yytext << endl ;
+}
 <DROP_TABLE_STATEMENT>{name} {/* drop-table-statement name*/
-	cout << "scanned drop-table-statement" << yytext << endl ;
+	cout << "table to drop:\t" << yytext << endl ;
 }
 {name} {
-	cout << "scanned name: " << yytext << endl ;
+	cout << "scanned name:\t" << yytext << endl ;
 }
 . {/* all other character */
 	fprintf(stderr, "Error: unaccepted character: %s\n", yytext) ;
