@@ -5,3 +5,4 @@ CREATE TABLE soeewf (sfd INT, sdfd STR20)
 DROP 	TABLE  some
 DELETE  	FROM  sdfwef
 
+CREATE TABLE course (sid INT, homework INT, project INT, exam INT, grade STR20)

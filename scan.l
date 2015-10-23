@@ -81,8 +81,12 @@ SELECT                {S}({WS}+{DISTINCT})?
 	cerr << "delete table:\t" << yytext << endl ;
 }
 <DROP_TABLE_STATEMENT>{name} {
-	cerr << "drop table:\t" << yytext << endl ;
+	cerr << 
+	"drop table:\t" << yytext << endl <<
 	/* drop-table-statement finished*/
+	"DROP TABLE statement scanned over" << endl <<
+	"____________" << endl << endl  ;
+	
 	BEGIN(INITIAL);
 }
 <INSERT_STATEMENT>{name} {
