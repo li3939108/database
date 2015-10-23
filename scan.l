@@ -116,6 +116,7 @@ SELECT                {S}({WS}+{DISTINCT})?
 }
 <C_T_S_EXPECT_COLON_OR_RIGHT_PARENTHESE>{WS}*\){WS}* {
 	cerr << 
+	/* create-table-statement finished*/
 	"CREATE TABLE statement scanned over" << endl << 
 	"____________" << endl << endl  ;
 	BEGIN(INITIAL);
