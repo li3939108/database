@@ -1,6 +1,8 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
+using namespace std;
 %}
 
 
@@ -44,16 +46,16 @@ D_T_Statement         {D_T}{WS}+{name}
 
 {WS}+                 {/* IGNORE white spaces */}       
 {SELECT}              {
-                      printf("scanned SELECT\n");
+                      cout << "scanned SELECT" << endl;
                       }
 {dotted_name}         { 
-                      printf("scanned dotted name: \n");
+                      cout << "scanned dotted name:" << endl ;
                       }
 {name}                { 
-                      printf("scanned name: \n");
+                      cout << "scanned name: " << endl ;
                       }
 {D_T}{WS}+{name}      {/* drop-table-statement */
-                      printf("scanned drop-table-statement\n"); 
+                      cout << "scanned drop-table-statement" << endl ;
                       }
 .                     {/* all other character */
                       perror("Error: unaccepted character\n") ;
