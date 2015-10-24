@@ -2,19 +2,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+
+#define GREEN_TEXT  "\e[1;32m"
+#define RED_TEXT "\e[1;31m"
+#define NORMAL_TEXT "\e[0m"
+#define HLINE  "---------------"
+
+
 using namespace std;
+
+void err_out_START(const char str[]) ;
+void err_out_OVER(const char str[]) ;
 %}
+
 %s                    DROP_TABLE_STATEMENT
 %s                    DELETE_STATEMENT
 %s                    SELECT_STATEMENT
 %s                    INSERT_STATEMENT
 
 %s                    CREATE_TABLE_STATEMENT
-%s                    C_T_S_EXPECT_LEFT_PARENTHESE
+%s                    C_T_S_EXPECT_LEFT_PARENTHESIS
 %s                    C_T_S_EXPECT_ATTR
 %s                    C_T_S_EXPECT_TYPE
-%s                    C_T_S_EXPECT_COLON_OR_RIGHT_PARENTHESE
+%s                    C_T_S_EXPECT_COMMA_OR_RIGHT_PARENTHESIS
 %s                    C_T_S_EXPECT_WS
+
+%s                    I_S_EXPECT_LEFT_PARENTHESIS
+%s                    I_S_EXPECT_ATTR
+%s                    I_S_VALUES_EXPECT_LEFT_PARENTHESIS_OR_SELECT
+%s                    I_S_EXPECT_VALUES
+%s                    I_S_EXPECT_COMMA_OR_RIGHT_PARENTHESIS
+%s                    I_S_VALUES_EXPECT_COMMA_OR_RIGHT_PARENTHESIS
+%s                    I_S_VALUES_EXPECT_value
 
 
 DOT                   [.]
@@ -26,7 +45,8 @@ pm_op                 [+-]
 md_op                 [*/]
 name                  {letter}({digit}|{letter})* 
 dotted_name           {name}{DOT}{name}
-literal               "[^"]"
+literal               \"[^"]\"
+value                 {literal}|{integer}|{NULL}
 WS                    [ \t\n\r]
 V                     VALUES
 S                     SELECT
@@ -51,27 +71,30 @@ D_T                   {DP}{WS}+{T}
 I_I                   {IS}{WS}+{IT}
 D_F                   {DT}{WS}+{F}
 SELECT                {S}({WS}+{DISTINCT})?
+LEFT_PARENTHESIS      [(]
+RIGHT_PARENTHESIS     [)]
+COMMA                 [,]
 
 %%
 
 {SELECT}{WS}+ {
-	cerr << "-----------" << endl << "scanned:\tSELECT [DISTINCT]" << endl;
+	err_out_START("SELECT [DISTINCT]");
 	BEGIN(SELECT_STATEMENT);
 }
 {D_F}{WS}+ {
-	cerr << "-----------" <<  endl << "scanned:\tDELETE FROM" << endl ;
+	err_out_START("DELETE FROM");
 	BEGIN(DELETE_STATEMENT);
 }
 {C_T}{WS}+ {
-	cerr << "-----------" <<  endl << "scanned:\tCREATE TABLE" << endl;
+	err_out_START("CREATE TABLE" );
 	BEGIN(CREATE_TABLE_STATEMENT);
 }
 {D_T}{WS}+ {
-	cerr << "-----------" <<  endl << "scanned:\tDROP TABLE" << endl ;
+	err_out_START("DROP TABLE" );
 	BEGIN(DROP_TABLE_STATEMENT);
 }
 {I_I}{WS}+ {
-	cerr << "-----------" <<  endl << "scanned:\tINSERT INTO" << endl ;
+	err_out_START("INSERT INTO");
 	BEGIN(INSERT_STATEMENT);
 }
 <SELECT_STATEMENT>{dotted_name} { 
@@ -81,23 +104,56 @@ SELECT                {S}({WS}+{DISTINCT})?
 	cerr << "delete table:\t" << yytext << endl ;
 }
 <DROP_TABLE_STATEMENT>{name} {
-	cerr << 
-	"drop table:\t" << yytext << endl <<
-	/* drop-table-statement finished*/
-	"DROP TABLE statement scanned over" << endl <<
-	"____________" << endl << endl  ;
-	
+	cerr << "table to Drop:\t" << yytext << endl ;
+	err_out_OVER("DROP TABLE");
 	BEGIN(INITIAL);
 }
+
+
+
+
 <INSERT_STATEMENT>{name} {
 	cerr << "table to ins:\t" << yytext << endl;
+	BEGIN(I_S_EXPECT_LEFT_PARENTHESIS);
+}
+<I_S_EXPECT_LEFT_PARENTHESIS>{WS}*{LEFT_PARENTHESIS}{WS}* {
+	BEGIN(I_S_EXPECT_ATTR);
+}
+<I_S_EXPECT_ATTR>{name} {
+	BEGIN(I_S_EXPECT_COMMA_OR_RIGHT_PARENTHESIS) ;
+	cerr << "attribute :\t" << yytext <<endl ;
+}
+<I_S_EXPECT_COMMA_OR_RIGHT_PARENTHESIS>{WS}*{COMMA}{WS}* {
+	BEGIN (I_S_EXPECT_ATTR) ;
+}
+<I_S_EXPECT_COMMA_OR_RIGHT_PARENTHESIS>{WS}*{RIGHT_PARENTHESIS}{WS}* {
+	BEGIN(I_S_EXPECT_VALUES) ;
+}
+<I_S_EXPECT_VALUES>{V} {
+	BEGIN(I_S_VALUES_EXPECT_LEFT_PARENTHESIS_OR_SELECT);
+}
+<I_S_VALUES_EXPECT_LEFT_PARENTHESIS_OR_SELECT>{WS}*{LEFT_PARENTHESIS}{WS}* {
+	BEGIN(I_S_VALUES_EXPECT_value);
+}
+<I_S_VALUES_EXPECT_value>{value} {
+	cerr << "value:      \t" << yytext << endl;
+	BEGIN(I_S_VALUES_EXPECT_COMMA_OR_RIGHT_PARENTHESIS);
+}
+<I_S_VALUES_EXPECT_COMMA_OR_RIGHT_PARENTHESIS>{WS}*{COMMA}{WS}* {
+	BEGIN(I_S_VALUES_EXPECT_value) ;
+}
+<I_S_VALUES_EXPECT_COMMA_OR_RIGHT_PARENTHESIS>{WS}*{RIGHT_PARENTHESIS}{WS}* {
+	err_out_OVER("INSERT INTO");
+	BEGIN(INITIAL);
 }
 
+
 <CREATE_TABLE_STATEMENT>{name} {
+	/* Enter CREATE TABLE statement */
 	cerr << "create table:\t" << yytext << endl;
-	BEGIN(C_T_S_EXPECT_LEFT_PARENTHESE);
+	BEGIN(C_T_S_EXPECT_LEFT_PARENTHESIS);
 }
-<C_T_S_EXPECT_LEFT_PARENTHESE>{WS}*\({WS}* {
+<C_T_S_EXPECT_LEFT_PARENTHESIS>{WS}*{LEFT_PARENTHESIS}{WS}* {
 	BEGIN(C_T_S_EXPECT_ATTR);
 }
 <C_T_S_EXPECT_ATTR>{name} {
@@ -109,18 +165,16 @@ SELECT                {S}({WS}+{DISTINCT})?
 }
 <C_T_S_EXPECT_TYPE>({INT}|{STR}) {
 	cerr << "the type is:\t" << yytext << endl ;
-	BEGIN(C_T_S_EXPECT_COLON_OR_RIGHT_PARENTHESE) ;
+	BEGIN(C_T_S_EXPECT_COMMA_OR_RIGHT_PARENTHESIS) ;
 }
-<C_T_S_EXPECT_COLON_OR_RIGHT_PARENTHESE>{WS}*,{WS}* {
+<C_T_S_EXPECT_COMMA_OR_RIGHT_PARENTHESIS>{WS}*{COMMA}{WS}* {
 	BEGIN(C_T_S_EXPECT_ATTR);
 }
-<C_T_S_EXPECT_COLON_OR_RIGHT_PARENTHESE>{WS}*\){WS}* {
-	cerr << 
-	/* create-table-statement finished*/
-	"CREATE TABLE statement scanned over" << endl << 
-	"____________" << endl << endl  ;
+<C_T_S_EXPECT_COMMA_OR_RIGHT_PARENTHESIS>{WS}*{RIGHT_PARENTHESIS}{WS}* {
+	err_out_OVER("CREATE TABLE");
 	BEGIN(INITIAL);
 }
+
 
 {name} {
 	cerr << "scanned name:\t" << yytext << endl ;
@@ -133,6 +187,19 @@ SELECT                {S}({WS}+{DISTINCT})?
 
 %%
 
+void err_out_START(const char str[]) {
+	#ifndef  NO_ERROR_OUTPUT
+	cerr << GREEN_TEXT << HLINE << endl << "Scan start:\t" <<
+	str << NORMAL_TEXT << endl;
+	#endif
+}
+void err_out_OVER(const char str[]){
+	#ifndef  NO_ERROR_OUTPUT
+	cerr << RED_TEXT << "Scan over:\t" <<
+	str <<  endl << 
+	HLINE << NORMAL_TEXT <<  endl  ;
+	#endif
+}
 int main( int argc, char **argv ){
 	++argv, --argc;  /* skip over program name */
 	if ( argc > 0 ){
