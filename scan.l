@@ -1,24 +1,17 @@
 %{
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-
-#define GREEN_TEXT  "\e[1;32m"
-#define RED_TEXT "\e[1;31m"
-#define NORMAL_TEXT "\e[0m"
-#define HLINE  "---------------"
-
-
-using namespace std;
-
-void err_out_START(const char str[]) ;
-void err_out_OVER(const char str[]) ;
+#include "common.h"
 %}
+%option               stack
+
+%s                    WHERE_SUB_STATEMENT
 
 %s                    DROP_TABLE_STATEMENT
-%s                    DELETE_STATEMENT
+
 %s                    SELECT_STATEMENT
-%s                    INSERT_STATEMENT
+
+%s                    DELETE_STATEMENT
+%s                    D_S_EXPECT_WHERE
+
 
 %s                    CREATE_TABLE_STATEMENT
 %s                    C_T_S_EXPECT_LEFT_PARENTHESIS
@@ -27,6 +20,7 @@ void err_out_OVER(const char str[]) ;
 %s                    C_T_S_EXPECT_COMMA_OR_RIGHT_PARENTHESIS
 %s                    C_T_S_EXPECT_WS
 
+%s                    INSERT_STATEMENT
 %s                    I_S_EXPECT_LEFT_PARENTHESIS
 %s                    I_S_EXPECT_ATTR
 %s                    I_S_VALUES_EXPECT_LEFT_PARENTHESIS_OR_SELECT
@@ -77,35 +71,46 @@ COMMA                 [,]
 
 %%
 
-{SELECT}{WS}+ {
+<INITIAL,D_S_EXPECT_WHERE>{SELECT}{WS}+ {
 	err_out_START("SELECT [DISTINCT]");
 	BEGIN(SELECT_STATEMENT);
 }
-{D_F}{WS}+ {
+<INITIAL,D_S_EXPECT_WHERE>{D_F}{WS}+ {
 	err_out_START("DELETE FROM");
 	BEGIN(DELETE_STATEMENT);
 }
-{C_T}{WS}+ {
+<INITIAL,D_S_EXPECT_WHERE>{C_T}{WS}+ {
 	err_out_START("CREATE TABLE" );
 	BEGIN(CREATE_TABLE_STATEMENT);
 }
-{D_T}{WS}+ {
+<INITIAL,D_S_EXPECT_WHERE>{D_T}{WS}+ {
 	err_out_START("DROP TABLE" );
 	BEGIN(DROP_TABLE_STATEMENT);
 }
-{I_I}{WS}+ {
+<INITIAL,D_S_EXPECT_WHERE>{I_I}{WS}+ {
 	err_out_START("INSERT INTO");
 	BEGIN(INSERT_STATEMENT);
 }
+
 <SELECT_STATEMENT>{dotted_name} { 
 	cerr << "column_name:\t" << yytext << endl ;
 }
+
 <DELETE_STATEMENT>{name} {/* DELETE from table */
 	cerr << "delete table:\t" << yytext << endl ;
+	BEGIN(D_S_EXPECT_WHERE);
 }
+<D_S_EXPECT_WHERE>{WS}*{W}{WS}* {
+	yy_push_state(WHERE_SUB_STATEMENT) ;
+}
+
+
+
+
+
 <DROP_TABLE_STATEMENT>{name} {
 	cerr << "table to Drop:\t" << yytext << endl ;
-	err_out_OVER("DROP TABLE");
+	scan_over(DROP_TABLE_STATEMENT);
 	BEGIN(INITIAL);
 }
 
@@ -143,7 +148,7 @@ COMMA                 [,]
 	BEGIN(I_S_VALUES_EXPECT_value) ;
 }
 <I_S_VALUES_EXPECT_COMMA_OR_RIGHT_PARENTHESIS>{WS}*{RIGHT_PARENTHESIS}{WS}* {
-	err_out_OVER("INSERT INTO");
+	scan_over(INSERT_STATEMENT);
 	BEGIN(INITIAL);
 }
 
@@ -171,7 +176,7 @@ COMMA                 [,]
 	BEGIN(C_T_S_EXPECT_ATTR);
 }
 <C_T_S_EXPECT_COMMA_OR_RIGHT_PARENTHESIS>{WS}*{RIGHT_PARENTHESIS}{WS}* {
-	err_out_OVER("CREATE TABLE");
+	scan_over(CREATE_TABLE_STATEMENT);
 	BEGIN(INITIAL);
 }
 
@@ -187,25 +192,3 @@ COMMA                 [,]
 
 %%
 
-void err_out_START(const char str[]) {
-	#ifndef  NO_ERROR_OUTPUT
-	cerr << GREEN_TEXT << HLINE << endl << "Scan start:\t" <<
-	str << NORMAL_TEXT << endl;
-	#endif
-}
-void err_out_OVER(const char str[]){
-	#ifndef  NO_ERROR_OUTPUT
-	cerr << RED_TEXT << "Scan over:\t" <<
-	str <<  endl << 
-	HLINE << NORMAL_TEXT <<  endl  ;
-	#endif
-}
-int main( int argc, char **argv ){
-	++argv, --argc;  /* skip over program name */
-	if ( argc > 0 ){
-		yyin = fopen( argv[0], "r" );
-	}else{
-		yyin = stdin;
-	}
-	yylex();
-}

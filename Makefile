@@ -1,8 +1,7 @@
-CC=clang++
+CC=g++
 cflag=-lfl
 
-isql: lex.yy.cc
+isql:  main.cpp lex.yy.cpp
 	$(CC)  -o $@ $< $(cflag)
-lex.yy.cc: scan.l
-	flex -o $@ $<
-
+lex.yy.cpp: scan.l
+	flex  -o $@ $< 
